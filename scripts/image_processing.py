@@ -2,7 +2,6 @@
 # conda install -c conda-forge opencv (only needs to be done once)
 # conda activate opencv-env
 
- 
 import numpy as np
 import cv2 as cv
 import glob
@@ -14,6 +13,10 @@ path0 = '/content/drive/MyDrive/repo/jewettDigitization/data/*.jpg'
 #jewett scans is not currently in here, should be 44 images
 # path1 = '/Users/madisonforman/Desktop/processing/data/jewettscans/*.jpg'
 cur = 0
+
+"""
+Requires a specific naming convention
+"""
 def create_names(path):
     # images = [f for f in os.listdir(dir)]
     lang = 'eng'
@@ -28,13 +31,21 @@ def create_names(path):
         # os.rename(os.path.join(dir, image), os.path.join(dir,filename))
     return names
 
+"""
+Loads the images
+"""
 def load_images(path):
     cv_imgs = []
     for img in glob.glob(path):
         i = cv.imread(img)
         cv_imgs.append(i)
     return cv_imgs
-#alpha controls brightness, beta controls contrast
+
+
+"""
+alpha controls brightness
+beta controls contrast
+"""
 def preprocess_images(path, alpha, beta):
     cur = 0
     image_list = load_images(path)
@@ -98,8 +109,13 @@ find a premade ocr that gets higher accuracy, and correct that instead
 have one/two person scanning and transcribing
 other two people find a dataset as close as possible and begin training that
 """
+
+
 # FOLLOWING THIS LINE FUNCTIONS HAVE NOT BEEN WORKING SUPER WELL <3 MIGHT BE BETTER ON SEGMENTED IMAGES
 #https://becominghuman.ai/how-to-automatically-deskew-straighten-a-text-image-using-opencv-a0c30aed83df
+"""
+Tries to find angle of skew in degrees
+"""
 def getSkewAngle(cvImage):
     new = cvImage.copy()
     gray = cv.cvtColor(new, cv.COLOR_BGR2GRAY)
@@ -118,6 +134,10 @@ def getSkewAngle(cvImage):
     if angle < -45:
         angle += 90
     return -1.0 * angle
+
+"""
+Rotates an image by an angle in degrees
+"""
 def rotate_image(cvImage, angle):
     new = cvImage.copy()
     (h,w) = new.shape[:2]
@@ -127,10 +147,16 @@ def rotate_image(cvImage, angle):
     flags = cv.INTER_CUBIC, borderMode = cv.BORDER_REPLICATE)
     return new
 
+"""
+Finds the angle and returns the rotated image
+"""
 def deskew(cvImage):
     angle = getSkewAngle(cvImage)
     return rotate_image(cvImage, -1.0 * angle)
 
+"""
+Returns an image with a removed border
+"""
 def remove_borders(cvImage):
     new = cvImage.copy()
     mask = np.zeros(new.shape, dtype=new.dtype)
@@ -144,3 +170,15 @@ def remove_borders(cvImage):
             cv.drawContours(mask, [c], -1, (255, 255, 255), -1)
     removed_boarder = cv.bitwise_and(new, new, mask=mask)
     return removed_boarder
+
+
+
+
+
+
+
+
+
+
+
+###########################################
