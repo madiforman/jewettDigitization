@@ -10,7 +10,7 @@ import os,sys
 from matplotlib import pyplot as plt
 from pathlib import Path
  
-path0 = '/Users/madisonforman/Desktop/processing/data/*.jpg' 
+path0 = '/Users/benmcauliffe/Desktop/Capstone 2nd Try/processing/data/*.jpg' 
 #jewett scans is not currently in here, should be 44 images
 # path1 = '/Users/madisonforman/Desktop/processing/data/jewettscans/*.jpg'
 cur = 0
