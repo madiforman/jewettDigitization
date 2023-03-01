@@ -10,13 +10,15 @@ import os,sys
 from matplotlib import pyplot as plt
 from pathlib import Path
  
-path0 = '/Users/madisonforman/Desktop/processing/data/*.jpg' 
+path0 = '/Users/madisonforman/Desktop/jewettDigitization/data/*.jpg' 
 #jewett scans is not currently in here, should be 44 images
 # path1 = '/Users/madisonforman/Desktop/processing/data/jewettscans/*.jpg'
 cur = 0
+#creates string names for tesseract syntax
 def create_names(path):
     # images = [f for f in os.listdir(dir)]
     lang = 'eng'
+
     font = 'jewett'
     str = f"{lang}.{font}.exp"
     names = []
@@ -25,46 +27,98 @@ def create_names(path):
         filename = f"{str}{i}.jpg"
         names.append(filename)
         i += 1
-        # os.rename(os.path.join(dir, image), os.path.join(dir,filename))
+        # os.rename(os.path.join(dir, image), os.path.join(dir,filename)) #files have already been named so dont run this rn
     return names
-
+#loads images as cv images
 def load_images(path):
     cv_imgs = []
     for img in glob.glob(path):
         i = cv.imread(img)
         cv_imgs.append(i)
     return cv_imgs
-#alpha controls brightness, beta controls contrast
+# def connect_lines(image):
+def remove_horizontal_lines(image):
+    # cv.imshow('src image', image)
+    # gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+    thresh = cv.threshold(image, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)[1]
+    horizontal_kernel = cv.getStructuringElement(cv.MORPH_RECT, (45, 1))
+    image1 = cv.dilate(thresh, horizontal_kernel, iterations=1) 
+
+    detected_lines = cv.morphologyEx(image1, cv.MORPH_OPEN, horizontal_kernel, iterations = 3)
+    cv.imshow('lines', detected_lines)
+
+    contours = cv.findContours(detected_lines, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    contours = contours[0] if len(contours) == 2 else contours[1]
+    # cv.imshow('lines', detected_lines)
+    for c in contours:
+        cv.drawContours(image, [c], -1, (255, 255, 255), 2)
+    return image
+def remove_vertical_lines(image):
+    thresh = cv.threshold(image, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)[1]
+    vertical_kernel = cv.getStructuringElement(cv.MORPH_RECT, (1, 40))
+    detected_lines = cv.morphologyEx(thresh, cv.MORPH_OPEN, vertical_kernel, iterations = 2)
+    contours = cv.findContours(detected_lines, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    contours = contours[0] if len(contours) == 2 else contours[1]
+    for c in contours:
+        cv.drawContours(image, [c], -1, (255, 255, 255), 2)
+    return image
+# def remove_linesII(image):
+#     ker0 = np.ones((3,5), np.uint8)
+#     ker1 = np.ones((9,9), np.uint8)
+
+#     imBW = cv.threshold(image, 230, 255, cv.THRESH_BINARY_INV)[1]
+#     image0 = cv.erode(imBW, ker0, iterations = 1)
+#     image1 = cv.dilate(image0, ker1, iterations=3)
+#     image2 = cv.bitwise_and(imBW, image1)
+#     image2 = cv.bitwise_not(image2)
+#     image3 = cv.bitwise_and(imBW, imBW, mask=image2)
+#     lines = cv.HoughLinesP(image3, 15, np.pi/180, 10, minLineLength = 440, maxLineGap = 15)
+    
+#     for i in range(len(lines)):
+#         for x0, y0, x1, y1 in lines[i]:
+#             cv.line(image, (x0, y0), (x1, y1), (0,255,0),2)
+#     return image
+
+"""
+Preprocess images does the image preprocessing
+- alpha controls brightness, beta controls contrast
+- alpha range: 0 < alpha < 1
+- beta range:  [-127, 127]
+""" 
 def preprocess_images(path, alpha, beta):
     cur = 0
     image_list = load_images(path)
     name_list = create_names(path)
-
-    print(name_list)
+    # print(name_list)
     i = 0
     for image in image_list:
         gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
         #1 grayscale and contrast
-        # gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+        gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
         adjusted = cv.convertScaleAbs(gray, alpha=alpha, beta=beta)
-        #2 blur and divide m 
+        removed_lines = remove_horizontal_lines(gray)
+        #2 blur and divide 
         #dividing all the values by 255 will convert it to range from 0 to 1.
         blur = cv.GaussianBlur(adjusted, (0,0), sigmaX=33, sigmaY=33)
         divide = cv.divide(adjusted, blur, scale=225)
         gray_filtered = cv.inRange(divide, 0, 100)
+
         #3 binarization
-        _, thresh = cv.threshold(adjusted, 200, 255, cv.THRESH_BINARY)
-        normalized = cv.normalize(adjusted, None, 0, 1.0, cv.NORM_MINMAX, dtype=cv.CV_32F)
+        _, thresh = cv.threshold(gray_filtered, 200, 255, cv.THRESH_BINARY)
+        normalized = cv.normalize(gray_filtered, None, 0, 1.0, cv.NORM_MINMAX, dtype=cv.CV_32F)
+        # removed_lines = remove_horizontal_lines(thresh)
+        cv.imshow("result", removed_lines)
         #4 noise removal
         kernel = cv.getStructuringElement(cv.MORPH_RECT, (1,1))
         morph = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
         erosion = cv.erode(morph, kernel, iterations=1)
-        #cv.imshow("thresh", thresh)
+        
+        # cv.imshow("thresh", thresh)
         # cv.imshow("morph", morph)
         # cv.imshow("og", image)
         # cv.imshow("gray filter", gray_filtered)
         # cv.imshow("normalized", normalized)
-        cv.imshow("eroded", erosion)
+        # cv.imshow("eroded", erosion)
 
         cv.waitKey()
         cv.destroyAllWindows()
