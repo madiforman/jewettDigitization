@@ -4,8 +4,8 @@ import glob
 import os,sys 
 from matplotlib import pyplot as plt
 
-path0 = '/Users/madisonforman/Desktop/processing/data'
-path1 = '/Users/madisonforman/Desktop/processing/data/jewettscans'
+path0 = '/content/drive/MyDrive/repo/jewettDigitization/data'
+path1 = '/content/drive/MyDrive/repo/jewettDigitization/jewettscans'
 
 os.chdir(path0)
 num_files = len(os.listdir('./'))
