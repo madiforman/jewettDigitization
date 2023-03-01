@@ -1,5 +1,5 @@
 # IMPORTANT: run this in terminal before to activate opencv enviornment
-# conda install -c conda-forge opencv 
+# conda install -c conda-forge opencv (only needs to be done once)
 # conda activate opencv-env
 
  
@@ -10,7 +10,7 @@ import os,sys
 from matplotlib import pyplot as plt
 from pathlib import Path
  
-path0 = '/Users/madisonforman/Desktop/processing/data/*.jpg'
+path0 = '/Users/madisonforman/Desktop/processing/data/*.jpg' 
 #jewett scans is not currently in here, should be 44 images
 # path1 = '/Users/madisonforman/Desktop/processing/data/jewettscans/*.jpg'
 cur = 0
@@ -80,6 +80,7 @@ preprocess_images(path0, 1, -10)
 
 
 """
+Notes from meeting with chambers:
 one approach: pretraining: train classifier on print, signatures, etc 
 supplement the rest of training with transcriptions of Jewett's notes
 maybe look for a pretrained OCR, or create a pretrained model
@@ -97,6 +98,7 @@ find a premade ocr that gets higher accuracy, and correct that instead
 have one/two person scanning and transcribing
 other two people find a dataset as close as possible and begin training that
 """
+# FOLLOWING THIS LINE FUNCTIONS HAVE NOT BEEN WORKING SUPER WELL <3 MIGHT BE BETTER ON SEGMENTED IMAGES
 #https://becominghuman.ai/how-to-automatically-deskew-straighten-a-text-image-using-opencv-a0c30aed83df
 def getSkewAngle(cvImage):
     new = cvImage.copy()
