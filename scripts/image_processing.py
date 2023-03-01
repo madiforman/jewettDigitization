@@ -1,12 +1,18 @@
- #conda activate opencv-env #conda install -c conda-forge opencv
+# IMPORTANT: run this in terminal before to activate opencv enviornment
+# conda install -c conda-forge opencv 
+# conda activate opencv-env
+
+ 
 import numpy as np
 import cv2 as cv
 import glob
 import os,sys 
 from matplotlib import pyplot as plt
 from pathlib import Path
-path0 = '/Users/madisonforman/Desktop/processing/data/1916FieldDiary/*.jpg'
-path1 = '/Users/madisonforman/Desktop/processing/data/jewettscans/*.jpg'
+ 
+path0 = '/Users/madisonforman/Desktop/processing/data/*.jpg'
+#jewett scans is not currently in here, should be 44 images
+# path1 = '/Users/madisonforman/Desktop/processing/data/jewettscans/*.jpg'
 cur = 0
 def create_names(path):
     # images = [f for f in os.listdir(dir)]
@@ -28,12 +34,12 @@ def load_images(path):
         i = cv.imread(img)
         cv_imgs.append(i)
     return cv_imgs
-
+#alpha controls brightness, beta controls contrast
 def preprocess_images(path, alpha, beta):
     cur = 0
     image_list = load_images(path)
     name_list = create_names(path)
-    print(len(name_list) == len(image_list))
+
     print(name_list)
     i = 0
     for image in image_list:
@@ -54,56 +60,43 @@ def preprocess_images(path, alpha, beta):
         morph = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
         erosion = cv.erode(morph, kernel, iterations=1)
         #cv.imshow("thresh", thresh)
-        cv.imshow("eroded", erosion)
         # cv.imshow("morph", morph)
         # cv.imshow("og", image)
         # cv.imshow("gray filter", gray_filtered)
         # cv.imshow("normalized", normalized)
-        # cv.waitKey()
-        # cv.destroyAllWindows()
-        # cur += 1
-        # if cur == 5:
-        #     break
-        os.chdir('/Users/madisonforman/Desktop/processing/data')
-        cv.imwrite(name_list[i], morph)
+        cv.imshow("eroded", erosion)
+
+        cv.waitKey()
+        cv.destroyAllWindows()
+        cur += 1
+        if cur == 5:
+            break
+        # os.chdir('/Users/madisonforman/Desktop/processing/data')
+        # cv.imwrite(name_list[i], morph)
         i += 1
 preprocess_images(path0, 1, -10)
-# preprocess_images(path1, 1, 30)
-
+#preprocess_images(path1, 1, 30)
 
 
 
 """
-one approach: pretraining: train classifier on print, signatures, etc
+one approach: pretraining: train classifier on print, signatures, etc 
 supplement the rest of training with transcriptions of Jewett's notes
-
 maybe look for a pretrained OCR, or create a pretrained model
 one person working on using a pretrained OCR, the other building it from scratch
 find something trained on Bentham
-
 Results by the midterm
-
 tesseract??
 THE MORE DATA THE BETTER
 (hold some back as test data)
-
 - transcribe a page and calculate how much time it would take to transcibe 500 pages
-
 step 3: putting back on the web 
-
 Measuring accuaracy 
-
 second approach: 
 find a premade ocr that gets higher accuracy, and correct that instead
-
 have one/two person scanning and transcribing
 other two people find a dataset as close as possible and begin training that
-
 """
-
-
-
-
 #https://becominghuman.ai/how-to-automatically-deskew-straighten-a-text-image-using-opencv-a0c30aed83df
 def getSkewAngle(cvImage):
     new = cvImage.copy()
