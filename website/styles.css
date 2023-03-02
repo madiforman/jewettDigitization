@@ -1,0 +1,61 @@
+body {
+    margin: 0;
+}
+.header-container {
+    top: 0;
+    padding: 0;
+    background-color: #631212;
+    height: 200px;
+    width: 100%;
+}
+
+img {
+    width: 150px;
+    height: auto;
+    margin-left: 20px;
+    margin-top: 20px;
+    float: left;
+}
+
+.header {
+    margin-left: 210px;
+    margin-top: 70px;
+    font-size: 50px;
+    float:left;
+    color: white;
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+}
+
+#myBtn {
+    margin-top: 30px;
+    margin-left: 30px;
+}
+
+/* Modal Content */
+.modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 30%;
+    display: flex;
+    justify-content: center;
+}
+
+#jewett-images {
+    text-align: center;
+}
+
+.scan {
+    height: 475px;
+    width: auto;
+}
+
+svg:hover,
+svg:focus{
+    color: #566573;
+    text-decoration: none;
+    cursor: pointer;
+}
