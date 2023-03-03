@@ -44,28 +44,65 @@ def preprocess_images(path, alpha, beta):
     i = 0
     for image in image_list:
         gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+        h = float(gray.shape[0])
+        C = 12.0*(90.0/h)
         #1 grayscale and contrast
+        
+        
+        bw = cv.adaptiveThreshold(gray, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 15, C)
+        bw = ~bw
+        vertical = bw.copy()
+        verticalsize = 5
+        verticalStructure = cv.getStructuringElement(cv.MORPH_RECT, (1, verticalsize))
+        vertical = cv.erode(vertical, verticalStructure, None, (-1,-1))
+        vertical = cv.dilate(vertical, verticalStructure, None, (-1,-1))
+        vertical = ~vertical
+        # cv.imshow("vertical", vertical)
+        
+        thresh = cv.threshold(vertical, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)[1]
+        horizontal_kernel = cv.getStructuringElement(cv.MORPH_RECT, (45, 1))
+        image1 = cv.dilate(thresh, horizontal_kernel, iterations=1) 
+        detected_lines = cv.morphologyEx(image1, cv.MORPH_OPEN, horizontal_kernel, iterations = 3)
+        contours = cv.findContours(detected_lines, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+        contours = contours[0] if len(contours) == 2 else contours[1]
+        for c in contours:
+            cv.drawContours(vertical, [c], -1, (255, 255, 255), 2)
+        cv.imshow('gray', vertical)
+        
         # gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-        adjusted = cv.convertScaleAbs(gray, alpha=alpha, beta=beta)
+        # adjusted = cv.convertScaleAbs(gray, alpha=alpha, beta=beta)
         #2 blur and divide m 
+        # thresh = cv.threshold(gray, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)[1]
+        # horizontal_kernel = cv.getStructuringElement(cv.MORPH_RECT, (45, 1))
+        # image1 = cv.dilate(thresh, horizontal_kernel, iterations=1) 
+        # detected_lines = cv.morphologyEx(image1, cv.MORPH_OPEN, horizontal_kernel, iterations = 3)
+        # contours = cv.findContours(detected_lines, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+        # contours = contours[0] if len(contours) == 2 else contours[1]
+        # # cv.imshow('lines', detected_lines)
+        # for c in contours:
+        #     cv.drawContours(gray, [c], -1, (255, 255, 255), 2)
+        # # cv.imshow('gray', gray)
+        # horizontal_kernel = cv.getStructuringElement(cv.MORPH_RECT, (3, 1))
+        # vertical = cv.erode(gray, horizontal_kernel, None, (-1,-1))
+        # dilated = cv.dilate(vertical, horizontal_kernel, None, (-1,-1))
+        # cv.imshow('dilated', dilated)
+        
         #dividing all the values by 255 will convert it to range from 0 to 1.
-        blur = cv.GaussianBlur(adjusted, (0,0), sigmaX=33, sigmaY=33)
-        divide = cv.divide(adjusted, blur, scale=225)
-        gray_filtered = cv.inRange(divide, 0, 100)
+        # blur = cv.GaussianBlur(adjusted, (0,0), sigmaX=33, sigmaY=33)
+        # divide = cv.divide(adjusted, blur, scale=225)
+        # gray_filtered = cv.inRange(divide, 0, 100)
         #3 binarization
-        _, thresh = cv.threshold(adjusted, 200, 255, cv.THRESH_BINARY)
-        normalized = cv.normalize(adjusted, None, 0, 1.0, cv.NORM_MINMAX, dtype=cv.CV_32F)
+        # _, thresh = cv.threshold(adjusted, 200, 255, cv.THRESH_BINARY)
+        # normalized = cv.normalize(adjusted, None, 0, 1.0, cv.NORM_MINMAX, dtype=cv.CV_32F)
         #4 noise removal
-        kernel = cv.getStructuringElement(cv.MORPH_RECT, (1,1))
-        morph = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
-        erosion = cv.erode(morph, kernel, iterations=1)
+        # kernel = cv.getStructuringElement(cv.MORPH_RECT, (1,1))
+        # morph = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
+        # erosion = cv.erode(morph, kernel, iterations=1)
         #cv.imshow("thresh", thresh)
         # cv.imshow("morph", morph)
         # cv.imshow("og", image)
         # cv.imshow("gray filter", gray_filtered)
         # cv.imshow("normalized", normalized)
-        cv.imshow("eroded", erosion)
-
         cv.waitKey()
         cv.destroyAllWindows()
         cur += 1
