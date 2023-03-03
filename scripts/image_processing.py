@@ -1,4 +1,5 @@
 # IMPORTANT: run this in terminal before to activate opencv enviornment
+# https://stackoverflow.com/questions/73148974/no-module-named-cv2-even-though-i-installed-it
 # conda install -c conda-forge opencv (only needs to be done once)
 # conda activate opencv-env
 
@@ -6,17 +7,14 @@ import numpy as np
 import cv2 as cv
 import glob
 import os,sys 
-from matplotlib import pyplot as plt
-from pathlib import Path
+# from pathlib import Ppyath
  
-path0 = '/content/drive/MyDrive/repo/jewettDigitization/data/*.jpg' 
+# path0 = '/content/drive/MyDrive/repo/jewettDigitization/data/*.jpg' 
+path0 = '/Users/ecmo/jewettDigitization/data/*.jpg'
 #jewett scans is not currently in here, should be 44 images
 # path1 = '/Users/madisonforman/Desktop/processing/data/jewettscans/*.jpg'
 cur = 0
 
-"""
-Requires a specific naming convention
-"""
 def create_names(path):
     # images = [f for f in os.listdir(dir)]
     lang = 'eng'
