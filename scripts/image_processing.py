@@ -41,10 +41,10 @@ def remove_horizontal_lines(image):
     # cv.imshow('src image', image)
     # gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
     thresh = cv.threshold(image, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)[1]
-    horizontal_kernel = cv.getStructuringElement(cv.MORPH_RECT, (45, 1))
+    horizontal_kernel = cv.getStructuringElement(cv.MORPH_RECT, (35, 1))
     image1 = cv.dilate(thresh, horizontal_kernel, iterations=1) 
 
-    detected_lines = cv.morphologyEx(image1, cv.MORPH_OPEN, horizontal_kernel, iterations = 3)
+    detected_lines = cv.morphologyEx(image1, cv.MORPH_OPEN, horizontal_kernel, iterations = 2)
     cv.imshow('lines', detected_lines)
 
     contours = cv.findContours(detected_lines, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
@@ -52,16 +52,46 @@ def remove_horizontal_lines(image):
     # cv.imshow('lines', detected_lines)
     for c in contours:
         cv.drawContours(image, [c], -1, (255, 255, 255), 2)
+    # cv.imshow(erosion, erosion)
     return image
-def remove_vertical_lines(image):
-    thresh = cv.threshold(image, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)[1]
-    vertical_kernel = cv.getStructuringElement(cv.MORPH_RECT, (1, 40))
-    detected_lines = cv.morphologyEx(thresh, cv.MORPH_OPEN, vertical_kernel, iterations = 2)
-    contours = cv.findContours(detected_lines, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    contours = contours[0] if len(contours) == 2 else contours[1]
-    for c in contours:
-        cv.drawContours(image, [c], -1, (255, 255, 255), 2)
-    return image
+def remove_horizontal(image):
+    h = float(image.shape[0])
+    maxVal = 250
+    blockSize = 15
+    C = 12.0*(90.0/h)
+    bw = cv.adaptiveThreshold(image, maxVal, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, blockSize, C)
+    bw = ~bw
+    vertical = bw.copy()
+    verticalStructure = cv.getStructuringElement(cv.MORPH_RECT, (1, 5))
+    vertical = cv.erode(vertical, verticalStructure, None, (-1,-1))
+    vertical = cv.dilate(vertical, verticalStructure, None, (-1,-1))
+    vertical = ~vertical
+    cv.imshow("remove_horiz", vertical)
+    return vertical
+def remove_noise(image):
+    blur = cv.GaussianBlur(image,(13,13),0)
+    thresh = cv.threshold(blur, 100,255, cv.THRESH_BINARY)[1]
+    cv.imshow("final 2", thresh)
+def repair_image(image):
+    ret, thresh1 = cv.threshold(image, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
+    kernel = np.array((5, 2), np.uint8)
+    closing = cv.morphologyEx(thresh1, cv.MORPH_CLOSE, kernel)
+    remove_noise(image)
+    # cv.imshow("final", closing)
+def remove_lines(image):
+    image = remove_horizontal(image)
+    edges = cv.Canny(image, 50, 150, apertureSize=3)
+    lines = cv.HoughLinesP(edges, 1, np.pi/180, 150, minLineLength=50, maxLineGap = 150)
+    for line in lines:
+        x0, y0, x1, y1 = line[0]
+        cv.line(image, (x0, y0), (x1, y1), (255, 0, 0), 3)
+    cv.imshow("remove lines", image)
+    # image = remove_horizontal(image)
+    repair_image(image)
+    # cv.imshow("result", image)
+
+    # cv.imshow("result", image)
+
 # def remove_linesII(image):
 #     ker0 = np.ones((3,5), np.uint8)
 #     ker1 = np.ones((9,9), np.uint8)
@@ -96,23 +126,25 @@ def preprocess_images(path, alpha, beta):
         #1 grayscale and contrast
         gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
         adjusted = cv.convertScaleAbs(gray, alpha=alpha, beta=beta)
-        removed_lines = remove_horizontal_lines(gray)
+        remove_lines(gray)
+        other = remove_horizontal(gray)
+        # cv.imshow("other", other)
         #2 blur and divide 
         #dividing all the values by 255 will convert it to range from 0 to 1.
-        blur = cv.GaussianBlur(adjusted, (0,0), sigmaX=33, sigmaY=33)
-        divide = cv.divide(adjusted, blur, scale=225)
-        gray_filtered = cv.inRange(divide, 0, 100)
+        # blur = cv.GaussianBlur(adjusted, (0,0), sigmaX=33, sigmaY=33)
+        # divide = cv.divide(adjusted, blur, scale=225)
+        # gray_filtered = cv.inRange(divide, 0, 100)
 
-        #3 binarization
-        _, thresh = cv.threshold(gray_filtered, 200, 255, cv.THRESH_BINARY)
-        normalized = cv.normalize(gray_filtered, None, 0, 1.0, cv.NORM_MINMAX, dtype=cv.CV_32F)
-        # removed_lines = remove_horizontal_lines(thresh)
-        cv.imshow("result", removed_lines)
-        #4 noise removal
-        kernel = cv.getStructuringElement(cv.MORPH_RECT, (1,1))
-        morph = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
-        erosion = cv.erode(morph, kernel, iterations=1)
+        # #3 binarization
+        # _, thresh = cv.threshold(gray_filtered, 200, 255, cv.THRESH_BINARY)
+        # normalized = cv.normalize(gray_filtered, None, 0, 1.0, cv.NORM_MINMAX, dtype=cv.CV_32F)
+    
+        # #4 noise removal
+        # kernel = cv.getStructuringElement(cv.MORPH_RECT, (1,1))
+        # morph = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
+        # erosion = cv.erode(morph, kernel, iterations=1)
         
+        # cv.imshow("dilated", dilated)
         # cv.imshow("thresh", thresh)
         # cv.imshow("morph", morph)
         # cv.imshow("og", image)
@@ -123,7 +155,7 @@ def preprocess_images(path, alpha, beta):
         cv.waitKey()
         cv.destroyAllWindows()
         cur += 1
-        if cur == 5:
+        if cur == 10:
             break
         # os.chdir('/Users/madisonforman/Desktop/processing/data')
         # cv.imwrite(name_list[i], morph)
@@ -198,3 +230,16 @@ def remove_borders(cvImage):
             cv.drawContours(mask, [c], -1, (255, 255, 255), -1)
     removed_boarder = cv.bitwise_and(new, new, mask=mask)
     return removed_boarder
+
+
+
+# # def remove_vertical_lines(image):
+# #     thresh = cv.threshold(image, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)[1]
+# #     vertical_kernel = cv.getStructuringElement(cv.MORPH_RECT, (1, 40))
+# #     detected_lines = cv.morphologyEx(thresh, cv.MORPH_OPEN, vertical_kernel, iterations = 2)
+# #     contours = cv.findContours(detected_lines, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+# #     contours = contours[0] if len(contours) == 2 else contours[1]
+# #     for c in contours:
+# #         cv.drawContours(image, [c], -1, (255, 255, 255), 2)
+
+#     return image
