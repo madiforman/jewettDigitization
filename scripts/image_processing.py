@@ -6,11 +6,22 @@
 import numpy as np
 import cv2 as cv
 import glob
- 
+import os,sys 
+from matplotlib import pyplot as plt
+from pathlib import Path
+# import imutils
+
 path0 = '/Users/seung/Documents/Spring23/jewettDigitization/data/*.jpg' 
+#jewett scans is not currently in here, should be 44 images
+# path1 = '/Users/madisonforman/Desktop/processing/data/jewettscans/*.jpg'
 cur = 0
+#creates string names for tesseract syntax
+process_images = []
+path_image = '/Users/seung/Documents/Spring23/jewettDigitization/data/1916fd-0006.jpg'
 def create_names(path):
+    # images = [f for f in os.listdir(dir)]
     lang = 'eng'
+
     font = 'jewett'
     str = f"{lang}.{font}.exp"
     names = []
@@ -19,95 +30,85 @@ def create_names(path):
         filename = f"{str}{i}.jpg"
         names.append(filename)
         i += 1
+        # os.rename(os.path.join(dir, image), os.path.join(dir,filename)) #files have already been named so dont run this rn
     return names
-
+#loads images as cv images
 def load_images(path):
     cv_imgs = []
     for img in glob.glob(path):
         i = cv.imread(img)
         cv_imgs.append(i)
     return cv_imgs
-
-def remove_horizontal_lines(image):
-
+def remove_vertical(image):
     thresh = cv.threshold(image, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)[1]
-    horizontal_kernel = cv.getStructuringElement(cv.MORPH_RECT, (35, 1))
-    image1 = cv.dilate(thresh, horizontal_kernel, iterations=1) 
+    kernel = np.ones((5,5),np.uint8)
+    thresh = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
 
-    detected_lines = cv.morphologyEx(image1, cv.MORPH_OPEN, horizontal_kernel, iterations = 2)
-    cv.imshow('lines', detected_lines)
-
+    vertical_kernel = cv.getStructuringElement(cv.MORPH_RECT, (1,50))
+    detected_lines = cv.morphologyEx(thresh, cv.MORPH_OPEN, vertical_kernel, iterations=1)
     contours = cv.findContours(detected_lines, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
     contours = contours[0] if len(contours) == 2 else contours[1]
-
     for c in contours:
-        cv.drawContours(image, [c], -1, (255, 255, 255), 2)
+        cv.drawContours(image, [c], -1, (255,255,255), 2)
+    return image
+def remove_horizontal(image):
+    edges = cv.Canny(image, 50, 150, apertureSize=3)
 
+    rho = 1              #Distance resolution of the accumulator in pixels.
+    theta = np.pi/100   #Angle resolution of the accumulator in radians.   
+    threshold = 50        #Only lines that are greater than threshold will be returned.
+    minLineLength = 750   #Line segments shorter than that are rejected.
+    maxLineGap = 80    #Maximum allowed gap between points on the same line to link them
+    color = (255, 255, 255)
+
+    lines = cv.HoughLinesP(edges , rho = rho, theta = theta, threshold = threshold, minLineLength = minLineLength, maxLineGap = maxLineGap)
+    # image = cv.cvtColor(image,cv.COLOR_GRAY2RGB)
+    if lines is not None:
+        for line in lines:
+            x0, y0, x1, y1 = line[0]
+            cv.line(image, (x0, y0), (x1, y1), color, 3)
     return image
 
-def remove_horizontal(image):
-    h = float(image.shape[0])
-    maxVal = 250
-    blockSize = 15
-    C = 12.0*(90.0/h)
-    bw = cv.adaptiveThreshold(image, maxVal, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, blockSize, C)
-    bw = ~bw
-    vertical = bw.copy()
-    verticalStructure = cv.getStructuringElement(cv.MORPH_RECT, (1, 5))
-    vertical = cv.erode(vertical, verticalStructure, None, (-1,-1))
-    vertical = cv.dilate(vertical, verticalStructure, None, (-1,-1))
-    vertical = ~vertical
-    cv.imshow("remove_horiz", vertical)
-    return vertical
-
+  
 def remove_noise(image):
-    blur = cv.GaussianBlur(image,(13,13),0)
-    thresh = cv.threshold(blur, 100,255, cv.THRESH_BINARY)[1]
-    cv.imshow("final 2", thresh)
-
-def repair_image(image):
-    ret, thresh1 = cv.threshold(image, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
-    kernel = np.array((5, 2), np.uint8)
-    closing = cv.morphologyEx(thresh1, cv.MORPH_CLOSE, kernel)
-    remove_noise(image)
-
-def remove_lines(image):
-    image = remove_horizontal(image)
-    edges = cv.Canny(image, 50, 150, apertureSize=3)
-    lines = cv.HoughLinesP(edges, 1, np.pi/180, 150, minLineLength=50, maxLineGap = 150)
-    for line in lines:
-        x0, y0, x1, y1 = line[0]
-        cv.line(image, (x0, y0), (x1, y1), (255, 0, 0), 3)
-    cv.imshow("remove lines", image)
-
-    repair_image(image)
+    blur = cv.GaussianBlur(image,(7, 7),0)
+    thresh = cv.threshold(image, 215  , 255, cv.THRESH_BINARY)[1]
+    return thresh  
 
 """
 Preprocess images does the image preprocessing
 - alpha controls brightness, beta controls contrast
 - alpha range: 0 < alpha < 1
 - beta range:  [-127, 127]
-""" 
+"""
 def preprocess_images(path, alpha, beta):
     cur = 0
     image_list = load_images(path)
-    name_list = create_names(path)
     i = 0
-    for image in image_list:
-        gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-        gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-        adjusted = cv.convertScaleAbs(gray, alpha=alpha, beta=beta)
-        remove_lines(gray)
-        other = remove_horizontal(gray)
+    kernel = np.ones((4, 4), np.uint8)
+    gray = cv.cvtColor(cv.imread(path), cv.COLOR_BGR2GRAY)
+    binarize =  cv.threshold(gray, 190, 255, cv.THRESH_BINARY)[1]
+    image = remove_vertical(binarize)
+    image = remove_horizontal(image)
+    
+    ret, thresh1 = cv.threshold(image, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
+    cv.imshow('thresh1', thresh1)
+    
+    k = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]], np.uint8)
+    closing = cv.morphologyEx(thresh1, cv.MORPH_CLOSE, k)
+    
+    k1 = np.ones((3, 3), np.uint8)
+    erosion = cv.erode(closing, k1, iterations = 1)
+    # cv.imshow("erosion", erosion)
+    # cv.imshow("image", image)        
+    cv.waitKey()
 
-        cv.waitKey()
-        cv.destroyAllWindows()
-        cur += 1
-        if cur == 10:
-            break
-        i += 1
+    cv.imwrite("img.jpg", image)
 
-preprocess_images(path0, 1, -10)
+preprocess_images(path_image, 1, -15)
+#preprocess_images(path1, 1, 30)
+
 
 
 """
