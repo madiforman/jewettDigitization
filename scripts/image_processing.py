@@ -89,9 +89,8 @@ def preprocess_images(path, alpha, beta):
     cur = 0
     image_list = load_images(path)
     name_list = create_names(path)
-    print(name_list)
-    print(len(name_list))
-    print(len(image_list))
+
+    assert len(image_list) == len(name_list)
     # print(name_list)
     # i = 0
     for i in range(len(image_list)):
