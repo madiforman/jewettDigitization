@@ -18,10 +18,13 @@ cur = 0
 #creates string names for tesseract syntax
 process_images = []
 path_image = '/Users/madisonforman/Desktop/jewettDigitization/data/fieldDiary1916/1916fd-0037.jpg'
+
 def create_names(path):
+    """
+    Crate names outputs a list of strings that will be file names for the processed images 
+    """
     # images = [f for f in os.listdir(dir)]
     lang = 'eng'
-
     font = 'jewett'
     str = f"{lang}.{font}.exp"
     names = []
@@ -34,17 +37,21 @@ def create_names(path):
     return names
 #loads images as cv images
 def load_images(path):
+    """
+    Load images takes a path name and reads in the list of images using cv.imread
+    """
     cv_imgs = []
     for img in glob.glob(path):
         i = cv.imread(img)
         cv_imgs.append(i)
     return cv_imgs
 def remove_vertical(image):
+
     thresh = cv.threshold(image, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)[1]
     kernel = np.ones((5,5),np.uint8)
     thresh = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
 
-    vertical_kernel = cv.getStructuringElement(cv.MORPH_RECT, (1,50))
+    vertical_kernel = cv.getStructuringElement(cv.MORPH_RECT, (1, 30))
     detected_lines = cv.morphologyEx(thresh, cv.MORPH_OPEN, vertical_kernel, iterations=1)
     contours = cv.findContours(detected_lines, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
@@ -83,28 +90,40 @@ Preprocess images does the image preprocessing
 - alpha controls brightness, beta controls contrast
 - alpha range: 0 < alpha < 1
 - beta range:  [-127, 127]
+**currently not using alpha or beta, but will probably come back into play later on
 """
 def preprocess_images(path, alpha, beta):
     cur = 0
     image_list = load_images(path)
     name_list = create_names(path)
+    print(name_list)
+    print(len(name_list))
+    print(len(image_list))
     # print(name_list)
-    i = 0
-    template = image_list[0]
-    for image in image_list:
+    # i = 0
+    for i in range(len(image_list)):
+        image = image_list[i]
+        name = name_list[i]
         gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-        binarize =  cv.threshold(gray, 215, 255, cv.THRESH_BINARY)[1]
-        image = remove_vertical(binarize)
-        image = remove_horizontal(image)
-        cv.imshow("image", image)        
+        # binarize =  cv.threshold(gray, 215, 255, cv.THRESH_BINARY)[1]
+        # image = remove_vertical(binarize)
+        # image = remove_horizontal(image)
+        ret, bin_map = cv.threshold(gray,210,255,0)
+        nlabels, labels, stats, centroids = cv.connectedComponentsWithStats(~bin_map, 4, cv.CV_32S) #find all connected components
+        
+        areas = stats[1:, cv.CC_STAT_AREA]
+        result = np.zeros((labels.shape), np.uint8)
+        for i in range(0, nlabels - 1):
+            if areas[i] >= 100: #if we want to get rid this area (turn it black)
+                result[labels == i + 1] = 255
+
+        result = ~result #invert the image
+        cv.imshow("result", result)
         cv.waitKey()
         cv.destroyAllWindows()
-        cur += 1
-        if cur == 10:
-            break
-        # os.chdir('/Users/madisonforman/Desktop/processing/data')
-        # cv.imwrite(name_list[i], morph)
-        i += 1
+        # os.chdir('/Users/madisonforman/Desktop/jewettDigitization/data/processed_fieldDiary1916') 
+        # cv.imwrite(name, result)
+        # i += 1
 preprocess_images(path0, 1, -15)
 #preprocess_images(path1, 1, 30)
 
