@@ -11,10 +11,6 @@ import os,sys
 path0 = '/Users/madisonforman/Desktop/jewettDigitization/data/fieldDiary1916/*.jpg' 
 #jewett scans is not currently in here, should be 44 images
 # path1 = '/Users/madisonforman/Desktop/processing/data/jewettscans/*.jpg'
-cur = 0
-#creates string names for tesseract syntax
-process_images = []
-path_image = '/Users/madisonforman/Desktop/jewettDigitization/data/fieldDiary1916/1916fd-0037.jpg'
 
 def create_names(path):
     """
