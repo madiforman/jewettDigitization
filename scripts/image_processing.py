@@ -105,9 +105,9 @@ def preprocess_images(path, alpha, beta):
         
         areas = stats[1:, cv.CC_STAT_AREA]
         result = np.zeros((labels.shape), np.uint8)
-        for i in range(0, nlabels - 1):
-            if areas[i] >= 100: #if we want to get rid this area (turn it black)
-                result[labels == i + 1] = 255
+        for j in range(0, nlabels - 1):
+            if areas[j] >= 75: #if we want to get rid this area (turn it black)
+                result[labels == j + 1] = 255
 
         result = ~result #invert the image
         cv.imshow("result", result)
