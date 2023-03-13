@@ -7,9 +7,6 @@ import numpy as np
 import cv2 as cv
 import glob
 import os,sys 
-from matplotlib import pyplot as plt
-from pathlib import Path
-import imutils
 
 path0 = '/Users/madisonforman/Desktop/jewettDigitization/data/fieldDiary1916/*.jpg' 
 #jewett scans is not currently in here, should be 44 images
